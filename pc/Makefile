@@ -1,23 +1,29 @@
-CXXFLAGS = -O2 -g -Wall
+CFLAGS = -O2 -g -Wall
+CXXFLAGS = -O2 -std=c++11 -g -Wall
 
-NETLIBS = -lPocoNet -lPocoFoundation -lwsock32
-GFXLIBS = -lglfw3
+# Mac OS
+NETLIBS = -lPocoNet -lPocoFoundation
+GFXLIBS = -lglfw
+
+# Windows mingw64 on MSYS2
+#NETLIBS = -lPocoNet -lPocoFoundation -lwsock32
+#GFXLIBS = -lglfw3
 
 all: board_server guiclient
 
 board_server: test_server.cpp BoardServer.o
-	c++ -o $@ test_server.cpp BoardServer.o $(NETLIBS)
+	c++ $(CXXFLAGS) -o $@ test_server.cpp BoardServer.o $(NETLIBS)
 
 guiclient: main.o imgui_impl_glfw.o imgui_impl_opengl3.o imgui.o imgui_draw.o imgui_widgets.o gl3w.o BoardClient.o BoardServer.o BoardContent.o lodepng.o QrCode.o
-	$(CXX) $^ -o $@ $(GFXLIBS) $(NETLIBS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(GFXLIBS) $(NETLIBS)
 
 main.o: main.cpp
 	$(CXX) -c $(CXXFLAGS) $< -I. -I./imgui -I./gl3w/include -o $@
 
 imgui_impl_glfw.o: imgui/imgui_impl_glfw.cpp
-	$(CXX) -c $(CXXFLAGS) $< -I./imgui -I./gl3w/include -o $@
+	$(CXX) -DIMGUI_IMPL_OPENGL_LOADER_GL3W -c $(CXXFLAGS) $< -I./imgui -I./gl3w/include -o $@
 imgui_impl_opengl3.o: imgui/imgui_impl_opengl3.cpp
-	$(CXX) -c $(CXXFLAGS) $< -I./imgui -I./gl3w/include -o $@
+	$(CXX) -DIMGUI_IMPL_OPENGL_LOADER_GL3W -c $(CXXFLAGS) $< -I./imgui -I./gl3w/include -o $@
 imgui.o: imgui/imgui.cpp
 	$(CXX) -c $(CXXFLAGS) $< -I./imgui -o $@
 imgui_draw.o: imgui/imgui_draw.cpp
