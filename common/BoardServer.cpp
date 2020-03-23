@@ -79,7 +79,7 @@ int BoardServer::Connection::recv(BoardMessage &msg){
 	return 0;
 }
 bool BoardServer::Connection::can_recv(){
-	Poco::Timespan span(100);
+	Poco::Timespan span(1000);
 	return socket.poll(span, Poco::Net::Socket::SELECT_READ) || (recvbuf.size() >= 8);
 }
 
@@ -115,19 +115,19 @@ int BoardServer::poll(){
 		Poco::Net::StreamSocket strs = socket.acceptConnection();
 		connections.push_back(BoardServer::Connection(strs));
 	}
-		for(size_t iconn = 0; iconn < connections.size(); ++iconn){
-			BoardServer::Connection &conn = connections[iconn];
-			try{
-				if(conn.can_recv()){
-					BoardMessage msg;
-					if(conn.recv(msg)){
-						process_message(iconn, msg);
-					}
+	for(size_t iconn = 0; iconn < connections.size(); ++iconn){
+		BoardServer::Connection &conn = connections[iconn];
+		try{
+			if(conn.can_recv()){
+				BoardMessage msg;
+				if(conn.recv(msg)){
+					process_message(iconn, msg);
 				}
-			}catch(Poco::Net::ConnectionResetException cre){
-				// ignore for now
 			}
+		}catch(Poco::Net::ConnectionResetException cre){
+			// ignore for now
 		}
+	}
 	return 1; // request for continued polling
 }
 

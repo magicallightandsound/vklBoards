@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "Poco/Net/Socket.h"
 
 struct BoardMessage{
 	enum Type{
