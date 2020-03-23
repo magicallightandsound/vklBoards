@@ -1,13 +1,23 @@
 CFLAGS = -O2 -g -Wall
 CXXFLAGS = -O2 -std=c++11 -g -Wall
 
-# Mac OS
-#NETLIBS = -lPocoNet -lPocoFoundation
-#GFXLIBS = -lglfw
 
-# Windows mingw64 on MSYS2
-NETLIBS = -lPocoNet -lPocoFoundation -lwsock32
-GFXLIBS = -lglfw3 -Lclip/build -lclip
+ifeq ($(OS),Windows_NT)
+	# Windows mingw64 on MSYS2
+	NETLIBS = -lPocoNet -lPocoFoundation -lwsock32
+	GFXLIBS = -lglfw3 -Lclip/build -lclip
+else
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		NETLIBS = -lPocoNet -lPocoFoundation
+		GFXLIBS = -lglfw3 -Lclip/build -lclip
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		# Mac OS
+		NETLIBS = -lPocoNet -lPocoFoundation
+		GFXLIBS = -lglfw -Lclip/build -lclip -framework Cocoa
+	endif
+endif
 
 all: board_server guiclient
 
