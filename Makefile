@@ -1,5 +1,5 @@
 CFLAGS = -O2 -g -Wall
-CXXFLAGS = -O2 -std=c++11 -g -Wall
+CXXFLAGS = -Icommon -O2 -std=c++11 -g -Wall
 
 
 ifeq ($(OS),Windows_NT)
@@ -21,44 +21,57 @@ endif
 
 all: board_server guiclient
 
-board_server: test_server.cpp BoardServer.o fastlz.o ImageCoder.o
+COMMON_OBJS = \
+	obj/BoardServer.o \
+	obj/BoardClient.o \
+	obj/BoardContent.o \
+	obj/fastlz.o \
+	obj/lodepng.o \
+	obj/ImageCoder.o
+GUI_OBJS = \
+	obj/imgui_impl_glfw.o \
+	obj/imgui_impl_opengl3.o \
+	obj/imgui.o \
+	obj/imgui_draw.o \
+	obj/imgui_widgets.o \
+	obj/gl3w.o
+
+board_server: pc/test_server.cpp $(COMMON_OBJS)
 	c++ $(CXXFLAGS) -o $@ $^ $(NETLIBS)
 
-guiclient: main.o imgui_impl_glfw.o imgui_impl_opengl3.o imgui.o imgui_draw.o imgui_widgets.o gl3w.o BoardClient.o BoardServer.o BoardContent.o lodepng.o  fastlz.o QrCode.o ImageCoder.o
+guiclient: obj/main.o obj/QrCode.o $(COMMON_OBJS) $(GUI_OBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(GFXLIBS) $(NETLIBS)
 
-main.o: main.cpp
+obj/main.o: pc/main.cpp
 	$(CXX) -c $(CXXFLAGS) $< -I. -I./imgui -I./gl3w/include -o $@
 
-imgui_impl_glfw.o: imgui/imgui_impl_glfw.cpp
+obj/imgui_impl_glfw.o: imgui/imgui_impl_glfw.cpp
 	$(CXX) -DIMGUI_IMPL_OPENGL_LOADER_GL3W -c $(CXXFLAGS) $< -I./imgui -I./gl3w/include -o $@
-imgui_impl_opengl3.o: imgui/imgui_impl_opengl3.cpp
+obj/imgui_impl_opengl3.o: imgui/imgui_impl_opengl3.cpp
 	$(CXX) -DIMGUI_IMPL_OPENGL_LOADER_GL3W -c $(CXXFLAGS) $< -I./imgui -I./gl3w/include -o $@
-imgui.o: imgui/imgui.cpp
+obj/imgui.o: imgui/imgui.cpp
 	$(CXX) -c $(CXXFLAGS) $< -I./imgui -o $@
-imgui_draw.o: imgui/imgui_draw.cpp
+obj/imgui_draw.o: imgui/imgui_draw.cpp
 	$(CXX) -c $(CXXFLAGS) $< -I./imgui -o $@
-imgui_widgets.o: imgui/imgui_widgets.cpp
+obj/imgui_widgets.o: imgui/imgui_widgets.cpp
 	$(CXX) -c $(CXXFLAGS) $< -I./imgui -o $@
-BoardClient.o: BoardClient.cpp BoardMessage.h BoardClient.h BoardServer.h
+obj/BoardClient.o: common/BoardClient.cpp common/BoardMessage.h common/BoardClient.h common/BoardServer.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
-BoardServer.o: BoardServer.cpp BoardMessage.h BoardServer.h
+obj/BoardServer.o: common/BoardServer.cpp common/BoardMessage.h common/BoardServer.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
-BoardContent.o: BoardContent.cpp BoardContent.h
+obj/BoardContent.o: common/BoardContent.cpp common/BoardContent.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
-QrCode.o: QrCode.cpp QrCode.hpp
+obj/QrCode.o: pc/QrCode.cpp pc/QrCode.hpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
-ImageCoder.o: ImageCoder.cpp ImageCoder.h
+obj/ImageCoder.o: common/ImageCoder.cpp common/ImageCoder.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
-fastlz.o: fastlz.c fastlz.h
+obj/fastlz.o: common/fastlz.c common/fastlz.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
-Clipboard.o: Clipboard.cpp Clipboard.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
-lodepng.o: lodepng.cpp lodepng.h
+obj/lodepng.o: common/lodepng.cpp common/lodepng.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-gl3w.o: gl3w/src/gl3w.c
+obj/gl3w.o: gl3w/src/gl3w.c
 	$(CC) -c $(CFLAGS) $< -I./gl3w/include -o $@
 
 
