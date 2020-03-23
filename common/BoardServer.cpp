@@ -132,13 +132,19 @@ int BoardServer::poll(){
 }
 
 void BoardServer::get_uri(std::string &uri) const{
-	const Poco::Net::HostEntry& entry = Poco::Net::DNS::thisHost();
-	const Poco::Net::HostEntry::AddressList& addrs = entry.addresses();
-	Poco::Net::HostEntry::AddressList::const_iterator addr_it = addrs.begin();
-	for (; addr_it != addrs.end(); ++addr_it){
-		if(addr_it->isLinkLocal() || addr_it->isLinkLocalMC() || addr_it->isLoopback()){ continue; }
-		uri = addr_it->toString();
-	}
+	try{
+		const Poco::Net::HostEntry& entry = Poco::Net::DNS::thisHost();
+		const Poco::Net::HostEntry::AddressList& addrs = entry.addresses();
+		Poco::Net::HostEntry::AddressList::const_iterator addr_it = addrs.begin();
+		for (; addr_it != addrs.end(); ++addr_it){
+			if(addr_it->isLinkLocal() || addr_it->isLinkLocalMC() || addr_it->isLoopback()){ continue; }
+			uri = addr_it->toString();
+		}
+	}catch(Poco::Net::HostNotFoundException e){
+	}catch(Poco::Net::NoAddressFoundException e){
+	}catch(Poco::Net::DNSException e){
+	}catch(Poco::IOException e){
+	} 
 }
 
 void BoardServer::broadcast(const BoardMessage &msg, int iconn_exclude){
