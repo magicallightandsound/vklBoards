@@ -35,6 +35,7 @@ class BoardServer{
 	void broadcast(const BoardMessage &msg, int iconn_exclude);
 public:
 	BoardServer(int port);
+	BoardServer(const char *addr, int port);
 	~BoardServer();
 	
 	void init();
