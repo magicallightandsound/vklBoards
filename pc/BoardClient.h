@@ -32,7 +32,7 @@ public:
 	void get_contents(board_index iboard, unsigned char *img);
 	void send_update(board_index iboard, unsigned char *img, unsigned stride, unsigned x, unsigned y, unsigned w, unsigned h);
 	
-	virtual void on_update(board_index iboard, const unsigned char *img, unsigned stride, unsigned x, unsigned y, unsigned w, unsigned h){}
+	virtual void on_update(board_index iboard, int method, const unsigned char *buffer, unsigned buflen, unsigned x, unsigned y, unsigned w, unsigned h){}
 private:
 	void process_message(const BoardMessage &msg);
 };

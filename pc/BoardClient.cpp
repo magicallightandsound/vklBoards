@@ -1,5 +1,6 @@
 #include "BoardClient.h"
 #include "BoardMessage.h"
+#include "ImageCoder.h"
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/Socket.h"
 #include "Poco/Net/StreamSocket.h"
@@ -95,15 +96,17 @@ void BoardClient::get_contents(BoardClient::board_index iboard, unsigned char *i
 	}
 }
 void BoardClient::send_update(BoardClient::board_index iboard, unsigned char *img, unsigned stride, unsigned x, unsigned y, unsigned w, unsigned h){
+	int method = 1;
 	BoardMessage msg(BoardMessage::BOARD_UPDATE, iboard);
 	msg.adds(w);
 	msg.adds(h);
 	msg.adds(x);
 	msg.adds(y);
-	msg.adds(0);
-	for(unsigned j = 0; j < h; ++j){
-		msg.addbytes(3*w, &img[3*(x+(y+j)*stride)]);
-	}
+	msg.adds(method);
+	ImageCoder::encode(method,
+		&img[3*(x+y*stride)], stride, w, h,
+		msg.payload
+	);
 	connection.send(msg);
 }
 
@@ -141,9 +144,7 @@ void BoardClient::process_message(const BoardMessage &msg){
 		unsigned x = msg.gets(4);
 		unsigned y = msg.gets(6);
 		unsigned enc = msg.gets(8);
-		if(0 == enc && msg.size() == 3*w*h+10){
-			on_update(msg.id(), &msg.payload[10], w, x, y, w, h);
-		}
+		on_update(msg.id(), enc, &msg.payload[10], msg.payload.size()-10, x, y, w, h);
 	}else if(msg.type() == BoardMessage::HANDSHAKE_SERVER){
 	}
 }

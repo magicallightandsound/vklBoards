@@ -2,6 +2,7 @@ Any code written by myself is licensed under the following MIT license.
 
 Subcomponents are included in this source distribution for convenience
 and are subject to their respective licenses. In particular:
+fastlz:            MIT license
 imgui:             MIT license
 glm:               MIT license
 gl3w:              public domain

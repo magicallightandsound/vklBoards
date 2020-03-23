@@ -2,19 +2,19 @@ CFLAGS = -O2 -g -Wall
 CXXFLAGS = -O2 -std=c++11 -g -Wall
 
 # Mac OS
-NETLIBS = -lPocoNet -lPocoFoundation
-GFXLIBS = -lglfw
+#NETLIBS = -lPocoNet -lPocoFoundation
+#GFXLIBS = -lglfw
 
 # Windows mingw64 on MSYS2
-#NETLIBS = -lPocoNet -lPocoFoundation -lwsock32
-#GFXLIBS = -lglfw3
+NETLIBS = -lPocoNet -lPocoFoundation -lwsock32
+GFXLIBS = -lglfw3
 
 all: board_server guiclient
 
-board_server: test_server.cpp BoardServer.o
-	c++ $(CXXFLAGS) -o $@ test_server.cpp BoardServer.o $(NETLIBS)
+board_server: test_server.cpp BoardServer.o fastlz.o ImageCoder.o
+	c++ $(CXXFLAGS) -o $@ $^ $(NETLIBS)
 
-guiclient: main.o imgui_impl_glfw.o imgui_impl_opengl3.o imgui.o imgui_draw.o imgui_widgets.o gl3w.o BoardClient.o BoardServer.o BoardContent.o lodepng.o QrCode.o
+guiclient: main.o imgui_impl_glfw.o imgui_impl_opengl3.o imgui.o imgui_draw.o imgui_widgets.o gl3w.o BoardClient.o BoardServer.o BoardContent.o lodepng.o  fastlz.o QrCode.o ImageCoder.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(GFXLIBS) $(NETLIBS)
 
 main.o: main.cpp
@@ -38,6 +38,10 @@ BoardContent.o: BoardContent.cpp BoardContent.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 QrCode.o: QrCode.cpp QrCode.hpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
+ImageCoder.o: ImageCoder.cpp ImageCoder.h
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+fastlz.o: fastlz.c fastlz.h
+	$(CC) -c $(CFLAGS) $< -o $@
 
 Clipboard.o: Clipboard.cpp Clipboard.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@

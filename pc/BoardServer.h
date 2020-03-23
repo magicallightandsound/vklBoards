@@ -42,6 +42,15 @@ public:
 	int poll(); // returns zero if no further polling should occur
 	
 	void get_uri(std::string &uri) const;
+	
+	static int encode(int method,
+		const unsigned char *rgb, unsigned stride, unsigned w, unsigned h,
+		std::vector<unsigned char> &buffer
+	);
+	static int decode(int method,
+		const unsigned char *buffer, size_t buflen,
+		unsigned char *rgb, unsigned stride, unsigned w, unsigned h
+	);
 };
 
 #endif // BOARD_SERVER_H_INCLUDED

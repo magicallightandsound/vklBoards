@@ -7,6 +7,7 @@
 #include "imgui_impl_opengl3.h"
 #include "BoardClient.h"
 #include "BoardContent.h"
+#include "ImageCoder.h"
 #include "lodepng.h"
 #include "QrCode.hpp"
 #include <cstdio>
@@ -176,10 +177,11 @@ struct MyBoard : public BoardClient, public BoardContent{
 	}
 	
 	// This is called when we have network data
-	void on_update(board_index iboard, const unsigned char *data, unsigned stride, unsigned x, unsigned y, unsigned w, unsigned h){
-		for(unsigned j = 0; j < h; ++j){
-			memcpy(&image[3*(x+(j+y)*width)], &data[3*(j*stride)], 3*w);
-		}
+	void on_update(board_index iboard, int method, const unsigned char *buffer, unsigned buflen, unsigned x, unsigned y, unsigned w, unsigned h){
+		ImageCoder::decode(method,
+			buffer, buflen,
+			&image[3*(x+y*width)], width, w, h
+		);
 		updatetex(&image[0], width, x, y, w, h);
 	}
 	

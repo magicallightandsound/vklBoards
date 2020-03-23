@@ -1,4 +1,5 @@
 #include "BoardServer.h"
+#include "ImageCoder.h"
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/Socket.h"
 #include "Poco/Net/StreamSocket.h"
@@ -229,6 +230,7 @@ void BoardServer::process_message(size_t iconn, const BoardMessage &msg){
 		break;
 	case BoardMessage::BOARD_GET_CONTENTS:
 		{
+			int method = 1;
 			unsigned iboard = msg.id();
 			BoardMessage resp(BoardMessage::BOARD_UPDATED, iboard);
 			if(iboard < boards.size()){
@@ -236,8 +238,11 @@ void BoardServer::process_message(size_t iconn, const BoardMessage &msg){
 				resp.adds(boards[iboard]->height);
 				resp.adds(0); // x offset
 				resp.adds(0); // y offset
-				resp.adds(0); // encoding
-				resp.addbytes(boards[iboard]->img);
+				resp.adds(method); // encoding
+				ImageCoder::encode(method,
+					&boards[iboard]->img[0], boards[iboard]->width, boards[iboard]->width, boards[iboard]->height,
+					resp.payload
+				);
 			}else{
 				resp.adds(0);
 				resp.adds(0);
@@ -259,33 +264,24 @@ void BoardServer::process_message(size_t iconn, const BoardMessage &msg){
 			unsigned x = msg.gets(4);
 			unsigned y = msg.gets(6);
 			unsigned enc = msg.gets(8);
-			size_t expected_msg_size = 10+3*w*h;
-			if(msg.size() < expected_msg_size){ return; }
-			
+			if(0 == enc){
+				size_t expected_msg_size = 10+3*w*h;
+				if(msg.size() < expected_msg_size){ return; }
+			}
 			// Window clamping
 			if(x >= board.width){ x = board.width-1; }
 			if(y >= board.height){ y = board.height-1; }
 			if(x + w > board.width){ w = board.width-x; }
 			if(y + h > board.height){ h = board.height-y; }
 			
-			// Begin composing response
+			ImageCoder::decode(enc,
+				&msg.payload[10], msg.payload.size()-10,
+				&board.img[3*(x+y*board.width)], board.width, w, h
+			);
+			
+			// Compose response
 			BoardMessage resp(BoardMessage::BOARD_UPDATED, iboard);
-			resp.adds(w);
-			resp.adds(h);
-			resp.adds(x);
-			resp.adds(y);
-			resp.adds(0); // encoding; 0 = raw RGB data; no compression
-			
-			// Perform board update
-			for(unsigned j = 0; j < h; ++j){
-				memcpy(
-					&board.img[3*(x+(j+y)*board.width)],
-					&msg.payload[10+3*(j*w)],
-					3*w
-				);
-				resp.addbytes(3*w, &msg.payload[10+3*(j*w)]);
-			}
-			
+			resp.payload = msg.payload;
 			broadcast(resp, iconn);
 			dbgmsg("Board updated: %d", iboard);
 		}
