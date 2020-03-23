@@ -76,4 +76,4 @@ obj/gl3w.o: gl3w/src/gl3w.c
 
 
 clean:
-	rm -f *.o *.exe
+	rm -f obj/*.o guiclient board_server *.exe
