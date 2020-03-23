@@ -13,6 +13,9 @@
 #include <cstdio>
 #include <sstream>
 
+// Clipboard support
+#include "clip/clip.h"
+
 #define GLM_ENABLE_EXPERIMENTAL 1
 #include "../glm/gtx/quaternion.hpp"
 
@@ -263,14 +266,31 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 			glfwSetWindowShouldClose(window, GLFW_TRUE);
 		}else if(key == GLFW_KEY_V){
 			if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)){
-				/*
-				unsigned char *img = NULL;
-				unsigned w, h;
-				if(get_clipboard_image(w, h, &img)){
-					board.paste_image(w, h, img, 3);
-					free(img);
+				clip::image clipimg;
+				if(clip::get_image(clipimg)){ // got image from clipboard
+					unsigned w = clipimg.spec().width;
+					unsigned h = clipimg.spec().height;
+					std::vector<unsigned char> img(3*w*h);
+					if(clipimg.spec().bits_per_pixel == 32){
+						unsigned rawstride = clipimg.spec().bytes_per_row;
+						unsigned char *dstrow = &img[0];
+						unsigned char *srcrow = (unsigned char *)clipimg.data();
+						for(unsigned j = 0; j < h; ++j){
+							unsigned char *dstptr = dstrow;
+							unsigned char *srcptr = srcrow;
+							for(unsigned int i = 0; i < w; ++i){
+								dstptr[0] = srcptr[0];
+								dstptr[1] = srcptr[1];
+								dstptr[2] = srcptr[2];
+								dstptr += 3;
+								srcptr += 4;
+							}
+							srcrow += rawstride;
+							dstrow += 3*w;
+						}
+						board.paste_image(w, h, &img[0], 3);
+					}
 				}
-				*/
 			}
 		}
 	}

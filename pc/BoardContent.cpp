@@ -224,7 +224,6 @@ void BoardContent::draw_gui(unsigned char *img, unsigned stride, unsigned width,
 	}
 }
 void BoardContent::gui_click(int i) {
-printf("click %d\n", i); fflush(stdout);
 	if(0 == i){ // move board
 		moving = true;
 	}

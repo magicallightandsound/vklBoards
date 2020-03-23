@@ -7,7 +7,7 @@ CXXFLAGS = -O2 -std=c++11 -g -Wall
 
 # Windows mingw64 on MSYS2
 NETLIBS = -lPocoNet -lPocoFoundation -lwsock32
-GFXLIBS = -lglfw3
+GFXLIBS = -lglfw3 -Lclip/build -lclip
 
 all: board_server guiclient
 
