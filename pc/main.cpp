@@ -177,7 +177,8 @@ struct MyBoard : public BoardClient, public BoardContent{
 	}
 	
 	// This is called when we have network data
-	void on_update(board_index iboard, int method, const unsigned char *buffer, unsigned buflen, unsigned x, unsigned y, unsigned w, unsigned h){
+	void on_update(board_index iboard_, int method, const unsigned char *buffer, unsigned buflen, unsigned x, unsigned y, unsigned w, unsigned h){
+		if(iboard != iboard_){ return; }
 		ImageCoder::decode(method,
 			buffer, buflen,
 			&image[3*(x+y*width)], width, w, h
@@ -444,7 +445,7 @@ int main(int argc, char *argv[]){
 	
 	unsigned int width, height;
 	board.BoardContent::get_size(width, height);
-	printf("board size %u %u\n", width, height);
+	//printf("board size %u %u\n", width, height);
 	board.gentex();
 
 	glGenVertexArrays(1, &vaoID);

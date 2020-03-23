@@ -12,6 +12,29 @@
 #include "Poco/Net/DNS.h"
 #include <iostream>
 
+#ifdef DEBUG_CLIENT
+static void dbgmsg(const char *fmt, ...){
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stdout, fmt, args);
+	va_end(args);
+	fflush(stdout);
+}
+static void msgdump(const BoardMessage &msg){
+	dbgmsg(" type(%04x) id(%04x)", msg.type(), msg.id());
+	size_t n = msg.size();
+	if(n > 16){ n = 16; }
+	for(size_t i = 0; i < n; ++i){
+		dbgmsg(" %02x", msg.payload[i]);
+	}
+	if(msg.size() > 16){ printf(" ..."); }
+	dbgmsg("\n");
+}
+#else
+# define dbgmsg(FMT, ...) do{}while(0)
+# define msgdump(MSG) do{}while(0)
+#endif
+
 BoardClient::BoardClient()
 {
 }
@@ -126,7 +149,7 @@ int BoardClient::poll(){
 	return 1;
 }
 int BoardClient::poll(BoardMessage::Type type, BoardMessage &msg){
-	printf("Looking for type %02x\n", type);
+	dbgmsg("Looking for type %02x\n", type);
 	while(1)
 	while(connection.can_recv()){
 		if(connection.recv(msg)){

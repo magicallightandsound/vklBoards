@@ -14,30 +14,32 @@
 #include <sstream>
 #include <cstdarg>
 
+#ifdef DEBUG_SERVER
 static void dbgmsg(const char *fmt, ...){
 	va_list args;
 	va_start(args, fmt);
 	vfprintf(stdout, fmt, args);
 	va_end(args);
-	fputc('\n', stdout);
 	fflush(stdout);
 }
-
 static void msgdump(const BoardMessage &msg){
-	printf(" type(%04x)", msg.type());
-	printf(" id(%04x)", msg.id());
+	dbgmsg(" type(%04x) id(%04x)", msg.type(), msg.id());
 	size_t n = msg.size();
 	if(n > 16){ n = 16; }
 	for(size_t i = 0; i < n; ++i){
-		printf(" %02x", msg.payload[i]);
+		dbgmsg(" %02x", msg.payload[i]);
 	}
 	if(msg.size() > 16){ printf(" ..."); }
-	fputc('\n', stdout);
-	fflush(stdout);
+	dbgmsg("\n");
 }
+#else
+# define dbgmsg(FMT, ...) do{}while(0)
+# define msgdump(MSG) do{}while(0)
+#endif
+
 
 int BoardServer::Connection::send(const BoardMessage &msg){
-	printf("Sending:\n");
+	dbgmsg("Sending:\n");
 	msgdump(msg);
 	
 	int ret;
@@ -70,7 +72,7 @@ int BoardServer::Connection::recv(BoardMessage &msg){
 		msg.payload.resize(expected_size-8);
 		memcpy(&msg.payload[0], &recvbuf[8], expected_size-8);
 		recvbuf.erase(recvbuf.begin(), recvbuf.begin()+expected_size);
-		printf("Received:\n");
+		dbgmsg("Received:\n");
 		msgdump(msg);
 		return 1;
 	}

@@ -43,7 +43,6 @@ int ImageCoder::encode(int method,
 	const unsigned char *rgb, unsigned stride, unsigned w, unsigned h,
 	std::vector<unsigned char> &buffer
 ){
-	printf("encode(method = %d, ...)\n",  method);
 	if(method < 0 || method > 1){ return -1; }
 	return endec[method].encoder(rgb, stride, w, h, buffer);
 }
@@ -52,7 +51,6 @@ int ImageCoder::decode(int method,
 	const unsigned char *buffer, unsigned buflen,
 	unsigned char *rgb, unsigned stride, unsigned w, unsigned h
 ){
-	printf("decode(method = %d, ...)\n",  method);
 	if(method < 0 || method > 1){ return -1; }
 	return endec[method].decoder(buffer, buflen, rgb, stride, w, h);
 }
@@ -184,7 +182,6 @@ int rle_enc(
 		}
 		sz = fastlz_compress_level(2, &buf[0], 3*w*h, &buffer[off]);
 	}
-	printf("------- enc sz = %d\n", sz);
 	buffer.resize(off+sz);
 	
 	return 0;
@@ -206,7 +203,6 @@ int rle_dec(
 			row += 3*w;
 		}
 	}
-	printf("------------- dec sz = %d\n", sz);
 	/*
 	size_t off = 0;
 	unsigned char *row = rgb;
