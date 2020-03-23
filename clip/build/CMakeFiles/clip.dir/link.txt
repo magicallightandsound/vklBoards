@@ -1,2 +1,0 @@
-/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar qc libclip.a  CMakeFiles/clip.dir/clip.cpp.o CMakeFiles/clip.dir/image.cpp.o CMakeFiles/clip.dir/clip_osx.mm.o
-/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib libclip.a
