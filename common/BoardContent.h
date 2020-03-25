@@ -8,6 +8,7 @@ public:
 	typedef int pixel_coord;
 	struct PenColor{
 		float rgb[3];
+		PenColor(){}
 		PenColor(float r, float g, float b){
 			rgb[0] = r;
 			rgb[1] = g;
