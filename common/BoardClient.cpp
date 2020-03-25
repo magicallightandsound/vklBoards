@@ -45,15 +45,15 @@ BoardClient::~BoardClient(){
 	}
 }
 
-int BoardClient::connect(const std::string &uri){
-	std::string id("user");
+int BoardClient::connect(const std::string &uri, const std::string &name){
 	try{
-		connection.socket = Poco::Net::StreamSocket(Poco::Net::SocketAddress(uri));
+		Poco::Timespan span(250000);
+		connection.socket.connect(Poco::Net::SocketAddress(uri), span);
 		BoardMessage msg(BoardMessage::HANDSHAKE_CLIENT, 1);
-		msg.addstring(id);
+		msg.addstring(name);
 		connection.send(msg);
 		server_uri = uri;
-	}catch(Poco::Net::ConnectionRefusedException cre){
+	}catch(Poco::Exception e){
 		return -1;
 	}
 	return 0;
@@ -86,6 +86,22 @@ void BoardClient::get_boards(std::vector<std::string> &boards){
 			std::string str = resp.getstring(off);
 			off += str.size()+1;
 			boards.push_back(str);
+		}
+	}
+}
+void BoardClient::get_users(std::vector<std::string> &users){
+	BoardMessage msg(BoardMessage::ENUMERATE_USERS, 0);
+	connection.send(msg);
+	BoardMessage resp;
+	if(poll(BoardMessage::USER_ENUMERATION, resp)){
+		unsigned off = 0;
+		unsigned n = resp.id();
+		users.clear();
+		users.reserve(n);
+		for(unsigned i = 0; i < n; ++i){
+			std::string str = resp.getstring(off);
+			off += str.size()+1;
+			users.push_back(str);
 		}
 	}
 }
@@ -169,5 +185,25 @@ void BoardClient::process_message(const BoardMessage &msg){
 		unsigned enc = msg.gets(8);
 		on_update(msg.id(), enc, &msg.payload[10], msg.payload.size()-10, x, y, w, h);
 	}else if(msg.type() == BoardMessage::HANDSHAKE_SERVER){
+	}else if(msg.type() == BoardMessage::BOARD_ENUMERATION){
+		std::vector<std::string> boards;
+		unsigned off = 0;
+		unsigned n = msg.id();
+		boards.clear();
+		boards.reserve(n);
+		for(unsigned i = 0; i < n; ++i){
+			std::string str = msg.getstring(off);
+			off += str.size()+1;
+			boards.push_back(str);
+		}
+		on_board_list_update(boards);
+	}else if(msg.type() == BoardMessage::CLIENT_CONNECTED){
+		std::string name;
+		name = msg.getstring(0);
+		on_user_connected(name);
+	}else if(msg.type() == BoardMessage::CLIENT_DISCONNECTED){
+		std::string name;
+		name = msg.getstring(0);
+		on_user_disconnected(name);
 	}
 }

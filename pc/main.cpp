@@ -76,6 +76,7 @@ static unsigned rounduppow2(unsigned v){ // compute the next highest power of 2 
 // Our intent here is to have the BoardContent be a "view" into a single board obtained from the BoardClient.
 struct MyBoard : public BoardClient, public BoardContent{
 	std::vector<std::string> boards;
+	std::vector<std::string> users;
 	int iboard;
 
 	GLuint texID, qrID;
@@ -89,13 +90,14 @@ struct MyBoard : public BoardClient, public BoardContent{
 		qr(qrcodegen::QrCode::encodeText("none", qrcodegen::QrCode::Ecc::HIGH))
 	{
 	}
-	int connect(const std::string &server_uri){
-		int ret = BoardClient::connect(server_uri);
+	int connect(const std::string &server_uri, const std::string &name){
+		int ret = BoardClient::connect(server_uri, name);
 		if(0 != ret){
 			printf(" connect returned %d\n", ret);
 			return ret;
 		}
 		get_boards(boards);
+		get_users(users);
 		if(boards.size() > 0){
 			iboard = 0;
 			BoardClient::get_size(iboard, width, height);
@@ -105,7 +107,11 @@ struct MyBoard : public BoardClient, public BoardContent{
 			draw_gui(&image[3*(width - 64)], width, 64, height);
 		}
 		
-		qr = qrcodegen::QrCode::encodeText(server_uri.c_str(), qrcodegen::QrCode::Ecc::HIGH);
+		//std::string uri1 = this->connection.socket.address().toString();
+		std::string uri2 = this->connection.socket.peerAddress().toString();
+		//printf("uri1: %s\n", uri1.c_str());
+		//printf("uri2: %s\n", uri2.c_str());
+		qr = qrcodegen::QrCode::encodeText(uri2.c_str(), qrcodegen::QrCode::Ecc::HIGH);
 		qrsize = qr.getSize();
 		qrtexsize = rounduppow2(qrsize);
 		
@@ -157,6 +163,15 @@ struct MyBoard : public BoardClient, public BoardContent{
 		}else{
 			send_update(iboard, &image[0], width, touched->x, touched->y, touched->w, touched->h);
 			updatetex(&image[0], width, touched->x, touched->y, touched->w, touched->h);
+		}
+	}
+	void on_user_connected(const std::string &name){
+		users.push_back(name);
+	}
+	void on_user_disconnected(const std::string &name){
+		std::vector<std::string>::iterator it = std::find(users.begin(), users.end(), name);
+		if(it != users.end()){
+			users.erase(it);
 		}
 	}
 	
@@ -336,12 +351,18 @@ static const char *shader_frag =
 "}\n";
 
 int main(int argc, char *argv[]){
+	std::string uri;
+	std::string myname = "<anonymous>";
 	if(argc < 2){
 		fprintf(stderr, "Provide server URI\n");
 		return 1;
 	}
+	uri = argv[1];
+	if(argc > 2){
+		myname = argv[2];
+	}
 	MyBoard board;
-	if(0 != board.connect(std::string(argv[1]))){
+	if(0 != board.connect(uri, myname)){
 		fprintf(stderr, "Could not connect to server\n");
 		return 1;
 	}
@@ -535,6 +556,17 @@ int main(int argc, char *argv[]){
 			if(ImGui::CollapsingHeader("QR code")){
 				ImGui::Image((void*)(intptr_t)board.qrID, ImVec2(1024, 1024));
 			}
+			
+			
+			if(ImGui::ListBoxHeader("Users")){
+				for(int i = 0; i < board.users.size(); ++i){
+					if(ImGui::Selectable(board.users[i].c_str(), false)){
+						// do nothing
+					}
+				}
+				ImGui::ListBoxFooter();
+			}
+			
 			ImGui::End();
 		}
 		ImGui::Render();

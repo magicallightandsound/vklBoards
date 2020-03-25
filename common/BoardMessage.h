@@ -12,11 +12,14 @@ struct BoardMessage{
 		CLIENT_DISCONNECT   = 0x0003, // sent by client to request disconnection
 		CLIENT_CONNECTED    = 0x0004, // sent from server to announce a client connection
 		CLIENT_DISCONNECTED = 0x0005, // sent from server to announce a client disconnection
+		ENUMERATE_USERS     = 0x0006, // send by client to ask for list of users
+		USER_ENUMERATION    = 0x0007, // server response to ENUMERATE_USERS
 		
 		ENUMERATE_BOARDS    = 0x0010, // sent by client to ask for list of boards
 		BOARD_ENUMERATION   = 0x0011, // server response to ENUMERATE_BOARDS
 		BOARD_CREATE        = 0x0012, // sent by client to request creation of a new board
 		BOARD_DELETE        = 0x0013, // sent by client to request creation of a new board
+		BOARD_LIST_UPDATED  = 0x0014, // sent to clients to inform if list of boards is updated
 		
 		BOARD_GET_SIZE      = 0x0020, // sent by client to query size of a board
 		BOARD_SIZE          = 0x0021, // sent by server in response to BOARD_GET_SIZE

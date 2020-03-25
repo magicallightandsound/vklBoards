@@ -111,6 +111,7 @@ int BoardServer::poll(){
 	if(socket.poll(span, Poco::Net::Socket::SELECT_READ)){
 		dbgmsg("Client connecting...");
 		Poco::Net::StreamSocket strs = socket.acceptConnection();
+		std::cout << "Client connected: " << strs.peerAddress().toString() << std::endl;
 		connections.push_back(BoardServer::Connection(strs));
 	}
 	for(size_t iconn = 0; iconn < connections.size(); ++iconn){
@@ -184,6 +185,7 @@ void BoardServer::process_message(size_t iconn, const BoardMessage &msg){
 	case BoardMessage::CLIENT_DISCONNECT:
 		{
 			dbgmsg("Client disconnected: %s", conn.id.c_str());
+			std::cout << "Client disconnected: " << conn.socket.peerAddress().toString() << std::endl;
 			
 			// Send disconnection announcement
 			BoardMessage announce(BoardMessage::CLIENT_DISCONNECTED, 0);
@@ -191,6 +193,15 @@ void BoardServer::process_message(size_t iconn, const BoardMessage &msg){
 			broadcast(announce, iconn);
 			conn.close();
 			connections.erase(connections.begin()+iconn);
+		}
+		break;
+	case BoardMessage::ENUMERATE_USERS:
+		{
+			BoardMessage resp(BoardMessage::USER_ENUMERATION, connections.size());
+			for(size_t i = 0; i < connections.size(); ++i){
+				resp.addstring(connections[i].id);
+			}
+			conn.send(resp);
 		}
 		break;
 	case BoardMessage::ENUMERATE_BOARDS:
@@ -213,6 +224,12 @@ void BoardServer::process_message(size_t iconn, const BoardMessage &msg){
 			add_board(2048, 1024, title);
 			
 			dbgmsg("Board created: %d", (int)(boards.size()-1));
+			
+			BoardMessage resp(BoardMessage::BOARD_ENUMERATION, boards.size());
+			for(size_t i = 0; i < boards.size(); ++i){
+				resp.addstring(boards[i]->title);
+			}
+			broadcast(resp, -1);
 		}
 		break;
 	case BoardMessage::BOARD_DELETE:
