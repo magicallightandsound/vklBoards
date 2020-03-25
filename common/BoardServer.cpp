@@ -105,8 +105,6 @@ int BoardServer::add_board(unsigned width, unsigned height, const std::string &t
 	memset(&boards.back()->img[0], 0xff, 3*width*height);
 	return ret;
 }
-void BoardServer::init(){
-}
 
 int BoardServer::poll(){
 	Poco::Timespan span(100);

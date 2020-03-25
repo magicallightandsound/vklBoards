@@ -37,7 +37,6 @@ public:
 	BoardServer(int port);
 	~BoardServer();
 	
-	void init();
 	int add_board(unsigned width, unsigned height, const std::string &title);
 	int poll(); // returns zero if no further polling should occur
 	
