@@ -91,6 +91,10 @@ BoardServer::BoardServer(int port):
 	socket(port)
 {
 }
+BoardServer::BoardServer(const char *addr, int port):
+	socket(Poco::Net::SocketAddress(std::string(addr), port))
+{
+}
 
 BoardServer::~BoardServer(){
 }
