@@ -18,7 +18,8 @@ Whiteboard::Whiteboard(BoardClient *client_, bool is_remote_, int board_index, c
 	is_remote(is_remote_),
 	iboard(board_index),
 	has_placement(false),
-	visible(false)
+	visible(false),
+	highlighted(false)
 {
 	position.location = glm::vec3(0,0,-2);
 	position.normal = glm::vec3(0,0,1);
@@ -37,6 +38,7 @@ void Whiteboard::ApplyShader(Shader& shader) {
 	glUseProgram(_progId);
 
 	_projId = shader.get_uniform_loc("projFrom3D");
+	_colorId = shader.get_uniform_loc("color");
 	GLuint location = shader.get_attrib_loc("coord3D");
 	GLuint location2 = shader.get_attrib_loc("tex2D");
 
@@ -87,6 +89,11 @@ void Whiteboard::Render(glm::mat4 projectionMatrix) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, _texId);
 	glBindVertexArray(_vaoId);
+	if(highlighted){
+		glUniform4f(_colorId, 0.5, 0.3, 0.6, 0.5);
+	}else{
+		glUniform4f(_colorId, 0, 0, 0, 0);
+	}
 	glUniformMatrix4fv(_projId, 1, GL_FALSE, &x[0][0]);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
@@ -118,8 +125,11 @@ int Whiteboard::RayIntersection(const glm::vec3 &o_, const glm::vec3 &d_, glm::v
 void Whiteboard::set_visibility(bool state){ visible = state; }
 bool Whiteboard::get_visibility() const{ return visible; }
 const std::string &Whiteboard::get_name() const{ return name; }
+void Whiteboard::set_highlight(bool state){ highlighted = state; }
 
-void Whiteboard::ReceiveInput(const glm::vec3 &pos, const glm::quat &rot, bool pressed, const glm::vec2 &cursor_pos) {
+void Whiteboard::ReceiveInput(const glm::vec3 &pos, const glm::quat &rot, bool pressed, const glm::vec2 &cursor_pos, const glm::vec3 &touch_delta) {
+	static const float k = 0.15f;
+
 	if(!visible){ return; }
 	if (moving){
 		if (pressed) {
@@ -127,6 +137,7 @@ void Whiteboard::ReceiveInput(const glm::vec3 &pos, const glm::quat &rot, bool p
 			glm::mat3 rotmat = glm::toMat3(rot);
 			position.location = pos - 1.f*rotmat[2];
 			position.normal = rotmat[2];
+			position.scale *= expf(k*touch_delta[1]);
 			UpdateTransform();
 		}else{
 			moving = false;

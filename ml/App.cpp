@@ -68,6 +68,7 @@ App::App(){
 	active_board = NULL;
 	hovered_board = NULL;
 	marker_mode = false;
+	hide_splash = false;
 }
 App::~App(){
 }
@@ -139,6 +140,10 @@ MLResult App::assets_init(){
 	
 	gui.init(&controller);
 	gui.ApplyShader(shadertex);
+	
+	splash.load("data/splash.png");
+	splash.ApplyShader(shadertex);
+	
 	return MLResult_Ok;
 }
 
@@ -162,41 +167,6 @@ MLResult App::privileges_init(){
 }
 void App::privileges_destroy(){
 	UNWRAP_MLRESULT(MLPrivilegesShutdown());
-}
-
-
-void App::QR_scan_begin(){
-	UNWRAP_MLRESULT_FATAL(MLCameraConnect());
-	UNWRAP_MLRESULT(MLCameraSetOutputFormat(MLCameraOutputFormat_YUV_420_888));
-		
-	connection_status = LOOKING_FOR_QRCODE;
-}
-void App::QR_scan_poll(){
-	if(ML_INVALID_HANDLE == QRscan.camera_capture_handle){
-		ML_LOG(Debug, " HANDLE_INVALID, calling MLCameraCaptureImageRaw");
-		UNWRAP_MLRESULT(MLCameraPrepareCapture(MLCameraCaptureType_ImageRaw, &QRscan.camera_capture_handle));
-		MLResult result = MLCameraCaptureImageRaw(); // this blocks
-		if(MLResult_Ok != result){
-			ML_LOG(Error, "MLCameraCaptureImageRaw: returned %d", result);
-		}
-	}else{
-		MLCameraResultExtras *extras = nullptr;
-		uint32_t capture_status;
-		UNWRAP_MLRESULT(MLCameraGetCaptureResultExtras(&extras));
-		UNWRAP_MLRESULT(MLCameraGetCaptureStatus(&capture_status));
-
-		if(capture_status & MLCameraCaptureStatusFlag_Completed){
-			MLCameraOutput *data = nullptr;
-			MLResult result = MLCameraGetImageStream(&data);
-			if (result == MLResult_Ok) {
-				on_camera_buffer(data, this);
-			}
-			QRscan.camera_capture_handle = ML_INVALID_HANDLE;
-		}
-	}
-}
-void App::QR_scan_end(){
-	MLCameraDisconnect();
 }
 
 void App::run(){
@@ -238,13 +208,26 @@ void App::run(){
 				glClearColor(0.0, 0.0, 0.0, 0.0);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+				// Obtain headpose
+				MLSnapshot *snapshot = nullptr;
+				UNWRAP_MLRESULT(MLPerceptionGetSnapshot(&snapshot));
+				MLTransform head_transform = {};
+				UNWRAP_MLRESULT(MLSnapshotGetTransform(snapshot, &gfx.head_static_data.coord_frame_head, &head_transform));
+				UNWRAP_MLRESULT(MLPerceptionReleaseSnapshot(snapshot));
+				glm::mat4 headpose;
+				{
+					glm::vec3 trans = glm::make_vec3(head_transform.position.values);
+					glm::mat4 rotMat = glm::mat4_cast(glm::make_quat(head_transform.rotation.values));
+					glm::mat4 transMat = glm::translate(glm::mat4(1.0f), trans);
+					headpose = transMat * rotMat;
+				}
+
 				// Get the projection matrix
 				MLGraphicsVirtualCameraInfo &current_camera = frame_info.virtual_cameras[camera];
 				
 				glm::mat4 projection(glm::make_mat4(current_camera.projection.matrix_colmajor));
 				glm::mat4 modelview;
 				{
-					glm::mat4 proj = glm::make_mat4(current_camera.projection.matrix_colmajor);
 					glm::vec3 trans = glm::make_vec3(current_camera.transform.position.values);
 					glm::mat4 rotMat = glm::mat4_cast(glm::make_quat(current_camera.transform.rotation.values));
 					glm::mat4 transMat = glm::translate(glm::mat4(1.0f), trans);
@@ -252,7 +235,7 @@ void App::run(){
 					modelview = (glm::inverse(worldFromCamera));
 				}
 				
-				render_scene(projection, modelview);
+				render_scene(projection, modelview, headpose);
 
 				// Bind the frame buffer
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -289,7 +272,7 @@ void App::update_board_list(){
 	}
 }
 
-void App::render_scene(const glm::mat4 &projection, const glm::mat4 &modelview){
+void App::render_scene(const glm::mat4 &projection, const glm::mat4 &modelview, const glm::mat4 &headpose){
 	glm::mat4 projectionMatrix = projection * modelview;
 
 	// Render objects
@@ -304,7 +287,7 @@ void App::render_scene(const glm::mat4 &projection, const glm::mat4 &modelview){
 	if(connection_status == LOOKING_FOR_QRCODE){
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		billboard.Render(projection);
+		billboard.Render(projection * modelview * headpose);
 		glDisable(GL_BLEND);
 	}
 	
@@ -319,6 +302,14 @@ void App::render_scene(const glm::mat4 &projection, const glm::mat4 &modelview){
 		pointer.Render(projectionMatrix * controller_pose);
 		glDisable(GL_BLEND);
 	}
+	
+	if(!hide_splash){
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		splash.Render(projection * modelview * headpose);
+		glDisable(GL_BLEND);
+	}
+	
 	// Render GUI
 	gui.Render(projectionMatrix);
 }
@@ -338,6 +329,7 @@ void App::build_gui(){
 			}
 			title << board->get_name();
 			bool is_visible = board->get_visibility();
+			board->set_highlight(false);
 			if(ImGui::Selectable(title.str().c_str(), is_visible)){
 				if(!is_visible && !board->has_placement){
 					glm::vec3 pos;
@@ -347,11 +339,12 @@ void App::build_gui(){
 				}
 				board->set_visibility(!is_visible);
 				if(!is_visible){
-					if(i >= content_remote.size() && connection_status == CONNECTED){
+					if(i < content_remote.size() && connection_status == CONNECTED){
 						request_update(i);
 					}
 				}
 			}
+			board->set_highlight(ImGui::IsItemHovered());
 		}
 		ImGui::ListBoxFooter();
 	}
@@ -398,11 +391,10 @@ void App::process_events(){
 		controller.get_pose(controller_pose);
 	}
 	
+	if(controller.get_bumper()){ hide_splash = true; }
+	
 	// Start image capture if needed
-	if(connection_status == LOOKING_FOR_QRCODE){
-		ML_LOG(Debug, "LOOKING_FOR_QRCODE");
-		QR_scan_poll();
-	}else if(connection_status == PROCESSING_IMAGE){
+	if(connection_status == PROCESSING_IMAGE){
 		QR_scan_end();
 		std::string name("<magic leap device>");
 		if(0 == connect(server_uri, name)){
@@ -413,10 +405,11 @@ void App::process_events(){
 			ML_LOG_TAG(Error, APP_TAG, "Connection failed\n");
 		}
 	}else if(connection_status == CONNECTED){
-		poll();
+		BoardClient::poll();
 	}
 
 	// Determine if user is pointing at a board
+	Whiteboard *prev_active_board = active_board;
 	active_board = NULL;
 	{
 		glm::vec4 z = controller_pose[2];
@@ -441,7 +434,11 @@ void App::process_events(){
 			glm::vec3 pos;
 			glm::quat rot;
 			controller.get_pose(pos, rot);
-			active_board->redraw_gui();
+			glm::vec3 touch_delta;
+			controller.get_touch(touch_delta);
+			if(active_board != prev_active_board){
+				active_board->redraw_gui();
+			}
 			bool is_marking = false;
 			if(marker_mode){
 				static const float stub_length = 0.05f; // in meters
@@ -451,13 +448,13 @@ void App::process_events(){
 					actual_length = t;
 				}
 				pointer.SetLength(actual_length, t - actual_length);
-				active_board->ReceiveInput(pos, rot, is_marking && !gui.is_visible(), p);
+				active_board->ReceiveInput(pos, rot, is_marking && !gui.is_visible(), p, touch_delta);
 			}else{
 				static const float trigger_threshold = 0.1f; // 0 = no actuation, 1 = full actuation
 				pointer.SetLength(t);
 				is_marking = controller.get_trigger() > trigger_threshold;
 			}
-			active_board->ReceiveInput(pos, rot, is_marking && !gui.is_visible(), p);
+			active_board->ReceiveInput(pos, rot, is_marking && !gui.is_visible(), p, touch_delta);
 			break;
 		}
 	}
@@ -565,9 +562,7 @@ MLResult App::graphics_context_t::init(){
 	MLGraphicsCreateClientGL(&graphics_options, opengl_context, &graphics_client);
 
 	// Set up the head tracker
-	MLHandle head_tracker;
 	MLResult head_track_result = MLHeadTrackingCreate(&head_tracker);
-	MLHeadTrackingStaticData head_static_data;
 
 	if(MLResult_Ok == head_track_result && MLHandleIsValid(head_tracker)){
 		MLHeadTrackingGetStaticData(head_tracker, &head_static_data);
@@ -583,44 +578,66 @@ void App::graphics_context_t::destroy(){
 }
 
 
-
-void App::on_camera_buffer(const MLCameraOutput *output, void *userdata){
-	App *app = (App*)userdata;
+void App::on_video_buffer(
+	const MLCameraOutput *output,
+	const MLCameraResultExtras *extra,
+	const MLCameraFrameMetadata *frame_metadata,
+	void *user_data
+){
+	App *app = (App*)user_data;
 	if(app->connection_status != app->LOOKING_FOR_QRCODE){ return; }
+	if(0 != (extra->frame_number & 0x7)){ return; } // only analyze every 8th frame
+
+	ML_LOG_TAG(Debug, APP_TAG, "Video buffer received\n");
 	
-	ML_LOG_TAG(Error, APP_TAG, "plane_count: %u", output->plane_count);
-	if (3 == output->plane_count) {
-		/*
-		ML_LOG_TAG(Error, APP_TAG, "bytes per pixel: %u", output->planes[0].bytes_per_pixel);
-		ML_LOG_TAG(Error, APP_TAG, "height: %u", output->planes[0].height);
-		ML_LOG_TAG(Error, APP_TAG, "width: %u", output->planes[0].width);
-		ML_LOG_TAG(Error, APP_TAG, "stride: %u", output->planes[0].stride);
-		ML_LOG_TAG(Error, APP_TAG, "size: %u", output->planes[0].size);
-		*/
-		zbar::zbar_image_scanner_t *scanner = zbar::zbar_image_scanner_create();
-		zbar::zbar_image_scanner_set_config(scanner, zbar::ZBAR_QRCODE, zbar::ZBAR_CFG_ENABLE, 1);
-		zbar::zbar_image_t *image = zbar::zbar_image_create();
-		zbar::zbar_image_set_format(image, *(int*)"Y800");
-		// This is not strictly correct since the stride of the image appears to be 2048, while the width of the image is 1920.
-		// It seems to not matter though.
-		zbar::zbar_image_set_size(image, output->planes[0].stride, output->planes[0].height);
-		zbar::zbar_image_set_data(image, output->planes[0].data, output->planes[0].stride * output->planes[0].height, NULL);
-		/* scan the image for barcodes */
-		int n = zbar::zbar_scan_image(scanner, image);
-		/* extract results */
-		const zbar::zbar_symbol_t *symbol = zbar::zbar_image_first_symbol(image);
-		for (; symbol; symbol = zbar::zbar_symbol_next(symbol)) {
-			/* do something useful with results */
-			zbar::zbar_symbol_type_t typ = zbar::zbar_symbol_get_type(symbol);
-			const char *data = zbar::zbar_symbol_get_data(symbol);
-			ML_LOG_TAG(Error, APP_TAG, "decoded %s symbol \"%s\"\n", zbar::zbar_get_symbol_name(typ), data);
-			
-			app->connection_status = app->PROCESSING_IMAGE; // At this point, flag as not connected and stop camera captures.
-			app->server_uri = data;
-			break;
-		}
-		/* clean up */
-		zbar::zbar_image_destroy(image);
-		zbar::zbar_image_scanner_destroy(scanner);
+	zbar::zbar_image_set_size(app->QRscan.image, output->planes[0].stride, output->planes[0].height);
+	zbar::zbar_image_set_data(app->QRscan.image, output->planes[0].data, output->planes[0].stride * output->planes[0].height, NULL);
+	
+	ML_LOG_TAG(Debug, APP_TAG, "Scanning for QR codes\n");
+	
+	int n = zbar::zbar_scan_image(app->QRscan.scanner, app->QRscan.image);
+	const zbar::zbar_symbol_t *symbol = zbar::zbar_image_first_symbol(app->QRscan.image);
+	for (; symbol; symbol = zbar::zbar_symbol_next(symbol)) {
+		zbar::zbar_symbol_type_t typ = zbar::zbar_symbol_get_type(symbol);
+		const char *data = zbar::zbar_symbol_get_data(symbol);
+		ML_LOG_TAG(Error, APP_TAG, "decoded %s symbol \"%s\"\n", zbar::zbar_get_symbol_name(typ), data);
+		
+		app->connection_status = app->PROCESSING_IMAGE; // At this point, flag as not connected and stop camera captures.
+		app->server_uri = data;
+		break;
 	}
+}
+
+void App::QR_scan_begin(){
+	UNWRAP_MLRESULT_FATAL(MLCameraConnect());
+	
+	ML_LOG_TAG(Debug, APP_TAG, "Installing callbacks\n");
+		
+	MLCameraCaptureCallbacksEx camcb = { 0 };
+	MLCameraCaptureCallbacksExInit(&camcb);
+	camcb.on_video_buffer_available = &on_video_buffer;
+	UNWRAP_MLRESULT_FATAL(MLCameraSetCaptureCallbacksEx(&camcb, this));
+
+	ML_LOG_TAG(Debug, APP_TAG, "Preparing capture\n");
+	
+	UNWRAP_MLRESULT(MLCameraPrepareCapture(MLCameraCaptureType_VideoRaw, &QRscan.camera_capture_handle));
+	
+	ML_LOG_TAG(Debug, APP_TAG, "Initializing zbar\n");
+
+	QRscan.scanner = zbar::zbar_image_scanner_create();
+	zbar::zbar_image_scanner_set_config(QRscan.scanner, zbar::ZBAR_QRCODE, zbar::ZBAR_CFG_ENABLE, 1);
+	QRscan.image = zbar::zbar_image_create();
+	zbar::zbar_image_set_format(QRscan.image, *(int*)"Y800");
+	
+	ML_LOG_TAG(Debug, APP_TAG, "Starting video\n");
+	UNWRAP_MLRESULT(MLCameraCaptureRawVideoStart()); // this is blocking
+	ML_LOG_TAG(Debug, APP_TAG, "Started video\n");
+	
+	connection_status = LOOKING_FOR_QRCODE;
+}
+void App::QR_scan_end(){
+	UNWRAP_MLRESULT(MLCameraCaptureVideoStop());
+	UNWRAP_MLRESULT(MLCameraDisconnect());
+	zbar::zbar_image_destroy(QRscan.image);
+	zbar::zbar_image_scanner_destroy(QRscan.scanner);
 }

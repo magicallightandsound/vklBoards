@@ -11,7 +11,7 @@ const char APP_TAG[] = "vklBoards::Billboard";
 #include <ml_logging.h>
 
 Billboard::Billboard(){
-	_position = glm::vec3(0, 0, -1);
+	_position = glm::vec3(0, 0, -0.7f);
 	_scale = glm::vec3(0.25);
 	
 	image = NULL;

@@ -9,8 +9,11 @@
 #include "../zbar/zbar.h"
 #include <ml_types.h>
 #include <ml_logging.h>
+#include <ml_head_tracking.h>
 
 class MLCameraOutput;
+class MLCameraResultExtras;
+class MLCameraFrameMetadata;
 
 class App : BoardClient{
 	enum {
@@ -22,6 +25,9 @@ class App : BoardClient{
 		EGLContext egl_context;
 		GLuint framebuffer_id;
 		MLHandle graphics_client;
+		
+		MLHandle head_tracker;
+		MLHeadTrackingStaticData head_static_data;
 
 		graphics_context_t();
 		~graphics_context_t();
@@ -67,12 +73,20 @@ class App : BoardClient{
 	
 	glm::mat4 controller_pose;
 	
+	Billboard splash;
+	bool hide_splash;
+	
 	// callbacks for application lifecycle system
 	static void on_stop(void* user_data);
 	static void on_pause(void* user_data);
 	static void on_resume(void* user_data);
 	
-	static void on_camera_buffer(const MLCameraOutput *output, void *user_data);
+	static void on_video_buffer(
+		const MLCameraOutput *output,
+		const MLCameraResultExtras *extra,
+		const MLCameraFrameMetadata *frame_metadata,
+		void *data
+	);
 	
 	void update_board_list();
 public:
@@ -99,10 +113,9 @@ public:
 	// The main loop calls the following functions in this order:
 	void build_gui();
 	void process_events();
-	void render_scene(const glm::mat4 &projection, const glm::mat4 &modelview);
+	void render_scene(const glm::mat4 &projection, const glm::mat4 &modelview, const glm::mat4 &headpose);
 	
 	void QR_scan_begin();
-	void QR_scan_poll();
 	void QR_scan_end();
 	
 	// Overrides from BoardClient

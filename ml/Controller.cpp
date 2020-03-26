@@ -62,6 +62,10 @@ float Controller::get_trigger() const{
 	return trigger;
 }
 
+bool Controller::get_bumper() const{
+	return bumper_down;
+}
+
 void Controller::set_bumper_handler(ButtonHandler &handler){
 	bumper_handler = &handler;
 }
@@ -79,4 +83,14 @@ void Controller::get_ray(glm::vec3 &org, glm::vec3 &dir) const{
 	dir[0] = -2.f * (rot.x * rot.z + rot.w * rot.y);
 	dir[1] = -2.f * (rot.y * rot.z + rot.w * rot.x);
 	dir[2] = 2.f * (rot.x * rot.x + rot.y * rot.y) - 1.f;
+}
+
+void Controller::get_touch(glm::vec3 &pos_and_force_delta) const{
+	if(touch_pos_and_force.z > 0.f && prev_touch_pos_and_force.z > 0.f){
+		pos_and_force_delta[0] = touch_pos_and_force.x - prev_touch_pos_and_force.x;
+		pos_and_force_delta[1] = touch_pos_and_force.y - prev_touch_pos_and_force.y;
+		pos_and_force_delta[2] = touch_pos_and_force.z - prev_touch_pos_and_force.z;
+	}else{
+		pos_and_force_delta = glm::vec3(0, 0, 0);
+	}
 }

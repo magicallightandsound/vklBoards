@@ -109,6 +109,7 @@ void Gui::ApplyShader(Shader& shader) {
 	_progId = shader.get_program_id();
 	glUseProgram(_progId);
 
+	_colorId = shader.get_uniform_loc("color");
 	_projId = shader.get_uniform_loc("projFrom3D");
 	GLuint location = shader.get_attrib_loc("coord3D");
 	unifTex = shader.get_attrib_loc("tex2D");
@@ -174,6 +175,7 @@ void Gui::Render(glm::mat4 projectionMatrix) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, imgui_color_texture_);
 	glBindVertexArray(_vaoId);
+	glUniform4f(_colorId, 0, 0, 0, 0);
 	glUniformMatrix4fv(_projId, 1, GL_FALSE, &transform[0][0]);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	glBindVertexArray(0);
@@ -279,13 +281,11 @@ void Gui::update_input() {
 		}
 	}
 	
-	if (controller->touch_pos_and_force.z > 0.f && controller->prev_touch_pos_and_force.z > 0.f) {
-		float delta_x = (controller->touch_pos_and_force.x - controller->prev_touch_pos_and_force.x);
-		float delta_y = (controller->touch_pos_and_force.y - controller->prev_touch_pos_and_force.y);
-		glm::vec2 delta_pos = io.DeltaTime * kCursorSpeed * glm::vec2(delta_x, -delta_y);
-		cursor_pos[0] = glm::clamp(cursor_pos[0] + delta_pos[0], 0.f, (float)kImguiQuadWidth);
-		cursor_pos[1] = glm::clamp(cursor_pos[1] + delta_pos[1], 0.f, (float)kImguiQuadHeight);
-	}
+	glm::vec3 delta;
+	controller->get_touch(delta);
+	delta *= io.DeltaTime * kCursorSpeed;
+	cursor_pos[0] = glm::clamp(cursor_pos[0] + delta[0], 0.f, (float)kImguiQuadWidth);
+	cursor_pos[1] = glm::clamp(cursor_pos[1] - delta[1], 0.f, (float)kImguiQuadHeight);
 	io.MousePos = ImVec2(cursor_pos[0], cursor_pos[1]);
 }
 

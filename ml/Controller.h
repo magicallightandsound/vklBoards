@@ -20,9 +20,12 @@ public:
 	};
 	void set_bumper_handler(ButtonHandler &handler);
 	
+	bool get_bumper() const;
+	
 	void get_pose(glm::vec3 &pos, glm::quat &rot) const;
 	void get_pose(glm::mat4 &m) const;
 	void get_ray(glm::vec3 &pos, glm::vec3 &dir) const;
+	void get_touch(glm::vec3 &pos_and_force_delta) const;
 public:
 	MLHandle handle;
 	bool is_connected;

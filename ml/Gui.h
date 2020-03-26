@@ -40,6 +40,7 @@ private:
 	GLuint _progId;
 	GLuint _vaoId;
 	GLuint _projId;
+	GLuint _colorId;
 	
 	Controller *controller;
 	GLuint imgui_color_texture_;

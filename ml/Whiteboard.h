@@ -31,24 +31,27 @@ public:
 	// Returns 1 if there is an intersection, otherwise, 0.
 	int RayIntersection(const glm::vec3 &o, const glm::vec3 &d, glm::vec2 &p, float &t) const;
 	
-	void ReceiveInput(const glm::vec3 &pos, const glm::quat &rot, bool pressed, const glm::vec2 &cursor_pos);
+	void ReceiveInput(const glm::vec3 &pos, const glm::quat &rot, bool pressed, const glm::vec2 &cursor_pos, const glm::vec3 &touch_delta);
 	
 	void set_position(const glm::vec3 &pos, const glm::quat &rot);
 	
 	void set_visibility(bool state);
 	bool get_visibility() const;
 	const std::string &get_name() const;
+	void set_highlight(bool state);
 public:
 	GLuint _progId;
 	GLuint _vaoId;
 	GLuint _projId;
 	GLuint _texId;
+	GLuint _colorId;
 
 	Position position;
 	glm::mat4 transform; // derived from position; updated whenever position is updated
 	glm::mat4 transform_inverse;
 
 	bool visible;
+	bool highlighted;
 
 	void UpdateTransform();
 	void coord2px(const glm::vec2 &p, int &x, int &y) const;
