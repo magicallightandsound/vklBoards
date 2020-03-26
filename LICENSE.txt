@@ -8,6 +8,7 @@ glm:               MIT license
 gl3w:              public domain
 lodepng:           See header file
 QR code generator: MIT license
+zbar:              GNU LGPL 2.1
 
 ----------------
 
