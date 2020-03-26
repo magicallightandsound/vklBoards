@@ -4,7 +4,7 @@
 #include <cstring>
 #include <cmath>
 
-BoardContent::BoardContent():drawable_region(0,0,2048,1024){
+BoardContent::BoardContent():drawable_region(0,0,2048,1024), moving(false){
 	width = 2048;
 	height = 1024;
 	width_height = (float)width / (float)height;
@@ -36,6 +36,12 @@ BoardContent::BoardContent():drawable_region(0,0,2048,1024){
 	
 	// Set up GUI
 	draw_gui(&image[3*(width - 64)], width, 64, height);
+}
+
+void BoardContent::redraw_gui(){
+	draw_gui(&image[3*(width - 64)], width, 64, height);
+	BoardContent::Region reg(width-64, 0, 64, height);
+	on_image_update(&reg);
 }
 
 BoardContent::~BoardContent(){
@@ -130,23 +136,65 @@ void BoardContent::get_size(unsigned int &width_, unsigned int &height_) const{
 	height_ = height;
 }
 
-void BoardContent::paste_image(unsigned int w, unsigned int h, const unsigned char *img, unsigned channels){
-	unsigned int stride = w;
-	if(w > width){ w = width; }
-	if(h > height){ h = height; }
-	for(unsigned int j = 0; j < h; ++j){
-		if(3 == channels){
-			memcpy(&image[3*j*width], &img[3*j*stride], 3*w);
+void BoardContent::paste_image(
+	unsigned int location_flags, unsigned int format,
+	const unsigned char *img, unsigned row_stride_bytes, unsigned bytes_per_pixel,
+	unsigned imgwidth, unsigned imgheight
+){
+	BoardContent::Region src(0, 0, imgwidth, imgheight);
+	BoardContent::Region dst(drawable_region);
+	if(src.w > dst.w){
+		src.w = dst.w;
+		if(location_flags & PASTE_LOC_LEFT){
+			// do nothing
+		}else if(location_flags & PASTE_LOC_RIGHT){
+			src.x = imgwidth - dst.w;
+		}else{ // centered
+			src.x = (imgwidth - dst.w) / 2;
+		}
+	}else{
+		dst.w = src.h;
+		if(location_flags & PASTE_LOC_LEFT){
+			// do nothing
+		}else if(location_flags & PASTE_LOC_RIGHT){
+			dst.x = src.w - dst.w;
+		}else{ // centered
+			dst.x = (src.w - dst.w) / 2;
+		}
+	}
+	if(src.h > dst.h){
+		src.h = dst.h;
+		if(location_flags & PASTE_LOC_TOP){
+			// do nothing
+		}else if(location_flags & PASTE_LOC_BOTTOM){
+			src.y = imgheight - dst.h;
+		}else{ // centered
+			src.y = (imgheight - dst.h) / 2;
+		}
+	}else{
+		dst.h = src.h;
+		if(location_flags & PASTE_LOC_TOP){
+			// do nothing
+		}else if(location_flags & PASTE_LOC_BOTTOM){
+			dst.y = src.h - dst.h;
+		}else{ // centered
+			dst.y = (src.h - dst.h) / 2;
+		}
+	}
+	
+	unsigned dststride = width;
+	for(unsigned int j = 0; j < src.h; ++j){
+		if(3 == bytes_per_pixel && PASTE_FORMAT_RGBA == format){
+			memcpy(&image[3*(dst.x+(dst.y+j)*dststride)], &img[3*src.x+(src.y+j)*row_stride_bytes], 3*src.w);
 		}else{
-			for(unsigned int i = 0; i < w; ++i){
+			for(unsigned int i = 0; i < src.w; ++i){
 				for(unsigned k = 0; k < 3; ++k){
-					image[3*(i+j*width)+k] = img[channels*(i+j*stride)+k];
+					image[3*(dst.x+i+(dst.y+j)*dststride)+k] = img[bytes_per_pixel*(src.x+i+(src.y+j)*row_stride_bytes)+k];
 				}
 			}
 		}
 	}
-	BoardContent::Region touched(0, 0, w, h);
-	on_image_update(&touched);
+	on_image_update(&dst);
 }
 
 

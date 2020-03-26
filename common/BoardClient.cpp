@@ -134,6 +134,11 @@ void BoardClient::get_contents(BoardClient::board_index iboard, unsigned char *i
 		process_message(resp); // punt
 	}
 }
+void BoardClient::request_update(BoardClient::board_index iboard){
+	BoardMessage msg(BoardMessage::BOARD_GET_CONTENTS, iboard);
+	connection.send(msg);
+	// We'll let the normal polling process grab the data
+}
 void BoardClient::send_update(BoardClient::board_index iboard, unsigned char *img, unsigned stride, unsigned x, unsigned y, unsigned w, unsigned h){
 	int method = 1;
 	BoardMessage msg(BoardMessage::BOARD_UPDATE, iboard);

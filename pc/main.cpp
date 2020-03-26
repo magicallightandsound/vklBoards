@@ -303,7 +303,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 							srcrow += rawstride;
 							dstrow += 3*w;
 						}
-						board.paste_image(w, h, &img[0], 3);
+						board.paste_image(
+							BoardContent::PASTE_LOC_CENTERED, BoardContent::PASTE_FORMAT_RGBA,
+							&img[0], 3*w, 3,
+							w, h
+						);
 					}
 				}
 			}
@@ -320,7 +324,11 @@ static void drop_callback(GLFWwindow* window, int count, const char** paths){
 //printf("file: %s\n", paths[i]);
 		error = lodepng_decode32_file(&image, &width, &height, paths[i]);
 		if(!error){
-			board.paste_image(width, height, image, 4);
+			board.paste_image(
+				BoardContent::PASTE_LOC_CENTERED, BoardContent::PASTE_FORMAT_RGBA,
+				image, 4*width, 4,
+				width, height
+			);
 			free(image);
 		}
 	}
@@ -548,6 +556,15 @@ int main(int argc, char *argv[]){
 				std::stringstream title;
 				title << "Board " << board.boards.size();
 				board.add_board(title.str());
+			}
+			if(ImGui::Button("Export board")){
+				char filename[32];
+				time_t rawtime;
+				struct tm *timeinfo;
+				time(&rawtime);
+				timeinfo = localtime(&rawtime);
+				strftime(filename, 32, "board-%Y-%m-%d-%H-%M-%S.png", timeinfo);
+				lodepng_encode24_file(filename, &board.image[0], width, height);
 			}
 			if(ImGui::Button("Exit")){
 				break;

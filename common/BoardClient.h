@@ -32,6 +32,7 @@ public:
 	
 	void get_size(board_index iboard, unsigned &width, unsigned &height);
 	void get_contents(board_index iboard, unsigned char *img);
+	void request_update(board_index iboard);
 	void send_update(board_index iboard, unsigned char *img, unsigned stride, unsigned x, unsigned y, unsigned w, unsigned h);
 	
 	virtual void on_update(board_index iboard, int method, const unsigned char *buffer, unsigned buflen, unsigned x, unsigned y, unsigned w, unsigned h){}

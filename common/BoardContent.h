@@ -46,12 +46,29 @@ public:
 	void get_pen_state(PenColor &color, float &width);
 	
 	void get_size(unsigned int &width, unsigned int &height) const;
-	void paste_image(unsigned int width, unsigned int height, const unsigned char *img, unsigned channels = 3);
+	enum PasteLocation{
+		PASTE_LOC_CENTERED = 0x00,
+		PASTE_LOC_LEFT     = 0x01,
+		PASTE_LOC_RIGHT    = 0x02,
+		PASTE_LOC_TOP      = 0x04,
+		PASTE_LOC_BOTTOM   = 0x08
+	};
+	enum PasteFormat{
+		PASTE_FORMAT_RGBA    = 0x00,
+		PASTE_FORMAT_BGR     = 0x01,
+		PASTE_FORMAT_BW      = 0x02
+	};
+	void paste_image(
+		unsigned int location_flags, unsigned int format,
+		const unsigned char *img, unsigned row_stride_bytes, unsigned bytes_per_pixel,
+		unsigned width, unsigned height
+	);
 	
 	void draw_gui(unsigned char *img, unsigned stride, unsigned width, unsigned height);
+	void redraw_gui();
 	void gui_click(int i);
 	virtual void gui_input(bool pressed, int x, int y);
-protected:
+public:
 	unsigned int width, height;
 	std::vector<unsigned char> image; // size 3*width*height
 	float width_height; // width/height
