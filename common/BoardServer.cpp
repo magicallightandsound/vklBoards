@@ -172,7 +172,7 @@ void BoardServer::process_message(size_t iconn, const BoardMessage &msg){
 				len = 256;
 			}
 			{
-				std::string str(msg.payload.begin(), msg.payload.begin()+len);
+				std::string str = msg.getstring(0);
 				conn.id = str.c_str();
 			}
 			// Send handshake response
@@ -224,10 +224,10 @@ void BoardServer::process_message(size_t iconn, const BoardMessage &msg){
 			if(len > 256){
 				len = 256;
 			}
-			title = std::string(msg.payload.begin(), msg.payload.begin()+len);
+			title = msg.getstring(0);
 			add_board(2048, 1024, title);
 			
-			dbgmsg("Board created: %d", (int)(boards.size()-1));
+			dbgmsg("Board created: %d, title = %s", (int)(boards.size()-1), title.c_str());
 			
 			BoardMessage resp(BoardMessage::BOARD_ENUMERATION, boards.size());
 			for(size_t i = 0; i < boards.size(); ++i){
