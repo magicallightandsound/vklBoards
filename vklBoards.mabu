@@ -1,0 +1,74 @@
+DEFS.lumin = ML_DEVICE IMGUI_IMPL_OPENGL_LOADER_GLAD
+
+INCS = ml/ common/
+KIND = program
+OPTIONS = \
+	exceptions/on \
+	standard-c++/11 \
+	stl/libgnustl \
+	warn/on
+
+SRCS = \
+	glad/src/glad.c \
+	imgui/imgui.cpp \
+	imgui/imgui_demo.cpp \
+	imgui/imgui_draw.cpp \
+	imgui/imgui_impl_opengl3.cpp \
+	imgui/imgui_widgets.cpp \
+	ml/Billboard.cpp \
+	ml/Controller.cpp \
+	ml/Gui.cpp \
+	ml/Pointer.cpp \
+	ml/Shader.cpp \
+	ml/Whiteboard.cpp \
+	ml/App.cpp \
+	common/BoardClient.cpp \
+	common/BoardServer.cpp \
+	common/BoardContent.cpp \
+	common/ImageCoder.cpp \
+	common/lodepng.cpp \
+	common/fastlz.c \
+	ml/main.cpp \
+	zbar/decoder.c \
+	zbar/decoder/code128.c \
+	zbar/decoder/code39.c \
+	zbar/decoder/ean.c \
+	zbar/decoder/i25.c \
+	zbar/decoder/qr_finder.c \
+	zbar/error.c \
+	zbar/image.c \
+	zbar/img_scanner.c \
+	zbar/qrcode/bch15_5.c \
+	zbar/qrcode/binarize.c \
+	zbar/qrcode/isaac.c \
+	zbar/qrcode/qrdec.c \
+	zbar/qrcode/qrdectxt.c \
+	zbar/qrcode/rs.c \
+	zbar/qrcode/util.c \
+	zbar/refcnt.c \
+	zbar/scanner.c \
+	zbar/symbol.c
+
+USES = \
+	OpenGL \
+	lumin_runtime \
+	ml_sdk \
+	poco_net \
+	stdc++
+
+SHLIBS.release_win_msvc-2017-15.9_x64 = \
+	ml_camera \
+	ml_privileges
+
+SHLIBS.release_lumin_clang-3.8_aarch64 = \
+	ml_camera \
+	ml_privileges
+
+SHLIBS.debug_win_msvc-2017-15.9_x64 = \
+	ml_camera \
+	ml_privileges
+
+SHLIBS.debug_lumin_clang-3.8_aarch64 = \
+	ml_camera \
+	ml_privileges
+

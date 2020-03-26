@@ -1,0 +1,5 @@
+DATAS.lumin = \
+	"data/" : "data/" \
+	"shader/" : "shader/"
+
+REFS = vklBoards
