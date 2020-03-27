@@ -19,16 +19,9 @@ public:
 	};
 	struct Region{
 		pixel_coord x, y, w, h;
-		Region(pixel_coord x_, pixel_coord y_, pixel_coord w_, pixel_coord h_):x(x_),y(y_),w(w_),h(h_){}
-		void expand_to_include(int tx, int ty){
-			if(tx < x){ w += (x - tx); x = tx; }
-			else if(tx >= x+w){ w = tx+1 - x; }
-			if(ty < y){ h += (y - ty); y = ty; }
-			else if(ty >= y+h){ h = ty+1 - y; }
-		}
-		bool contains(int tx, int ty) const{
-			return (x <= tx && tx < x+w && y <= ty && ty < y+h);
-		}
+		Region(pixel_coord x, pixel_coord y, pixel_coord w, pixel_coord h);
+		void expand_to_include(int tx, int ty);
+		bool contains(int tx, int ty) const;
 	};
 
 	BoardContent();
@@ -94,6 +87,7 @@ public:
 	std::vector<PenColor> color_palette;
 
 	void draw_line(pixel_coord x0, pixel_coord y0, pixel_coord x1, pixel_coord y1, Region *touched);
+	void paint(pixel_coord x, pixel_coord y, Region *touched);
 	void set_pixel(pixel_coord x, pixel_coord y, float val, Region *touched);
 	virtual void on_image_update(Region *touched = NULL){}
 };

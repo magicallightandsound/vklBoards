@@ -4,6 +4,32 @@
 #include <cstring>
 #include <cmath>
 
+
+BoardContent::Region::Region(pixel_coord x_, pixel_coord y_, pixel_coord w_, pixel_coord h_):
+	x(x_), y(y_),
+	w(w_), h(h_)
+{
+}
+void BoardContent::Region::expand_to_include(int tx, int ty){
+	if(tx >= x+w){
+		w = tx-x+1;
+	}
+	if(tx < x){
+		w += x-tx;
+		x = tx;
+	}
+	if(ty >= y+h){
+		h = ty-y+1;
+	}
+	if(ty < y){
+		h += y-ty;
+		y = ty;
+	}
+}
+bool BoardContent::Region::contains(int tx, int ty) const{
+	return (x <= tx && tx < x+w && y <= ty && ty < y+h);
+}
+
 BoardContent::BoardContent():drawable_region(0,0,2048,1024), moving(false){
 	width = 2048;
 	height = 1024;
@@ -47,34 +73,40 @@ void BoardContent::redraw_gui(){
 BoardContent::~BoardContent(){
 }
 
-void BoardContent::draw_line(pixel_coord x0, pixel_coord y0, pixel_coord x1, pixel_coord y1, BoardContent::Region *touched) {
-	float wd = pen.width;
-	//ML_LOG_TAG(Debug, APP_TAG, "drawline %f, %f -> %f, %f : %d, %d -> %d, %d", a[0], a[1], b[0], b[1], x0, y0, x1, y1);
+static float fmax(float a, float b){ return (a > b) ? a : b; }
 
-	int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
-	int dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
-	int err = dx - dy, e2, x2, y2;                          /* error value e_xy */
-	float ed = dx + dy == 0 ? 1 : sqrt((float)dx*dx + (float)dy*dy);
+void BoardContent::draw_line(pixel_coord x0, pixel_coord y0, pixel_coord x1, pixel_coord y1, BoardContent::Region *touched) { 
+	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
+	int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 
+	int err = (dx>dy ? dx : -dy)/2, e2;
 
-	for (wd = (wd + 1) / 2; ; ) {                                   /* pixel loop */
-		float val = 1;// std::abs(err - dx + dy) / ed - wd + 1;
-		set_pixel(x0, y0, val, touched);
-		e2 = err; x2 = x0;
-		if (2 * e2 >= -dx) {                                           /* x step */
-			for (e2 += dy, y2 = y0; e2 < ed*wd && (y1 != y2 || dx > dy); e2 += dx) {
-				float val = 1;// std::abs(e2) / ed - wd + 1;
-				set_pixel(x0, y2 += sy, val, touched);
+	for(;;){
+		paint(x0, y0, touched);
+		if (x0==x1 && y0==y1) break;
+		e2 = err;
+		if (e2 >-dx) { err -= dy; x0 += sx; }
+		if (e2 < dy) { err += dx; y0 += sy; }
+	}
+}
+
+void BoardContent::paint(pixel_coord ux, pixel_coord uy, BoardContent::Region *touched){
+	const int ix = ux;
+	const int iy = uy;
+	const float r = 0.5*pen.width;
+	const int y0 = floor(iy - r);
+	const int y1 = floor(iy + 1 + r);
+	const int x0 = floor(ix - r);
+	const int x1 = floor(ix + 1 + r);
+	const float r2 = r*r;
+	for(int y = y0; y <= y1; ++y){
+		const int dy = y - iy;
+		const int dy2 = dy*dy;
+		for(int x = x0; x <= x1; ++x){
+			const int dx = x - ix;
+			const int dx2 = dx*dx;
+			if(dx2+dy2 <= r2){
+				set_pixel(x, y, 1, touched);
 			}
-			if (x0 == x1) break;
-			e2 = err; err -= dy; x0 += sx;
-		}
-		if (2 * e2 <= dy) {                                            /* y step */
-			for (e2 = dx - e2; e2 < ed*wd && (x1 != x2 || dx < dy); e2 += dy) {
-				float val = 1;// std::abs(e2) / ed - wd + 1;
-				set_pixel(x2 += sx, y0, val, touched);
-			}
-			if (y0 == y1) break;
-			err += dx; y0 += sy;
 		}
 	}
 }
@@ -105,7 +137,9 @@ void BoardContent::pen_move(pixel_coord x, pixel_coord y) {
 	if (pen.down && (x != pen.cursor_prev[0] || y != pen.cursor_prev[1])){
 		BoardContent::Region touched(width, height, -width, -height);
 		draw_line(pen.cursor_prev[0], pen.cursor_prev[1], x, y, &touched);
-		on_image_update(&touched);
+		if(touched.w > 0 && touched.h > 0){
+			on_image_update(&touched);
+		}
 	}
 	pen.cursor_prev[0] = x;
 	pen.cursor_prev[1] = y;
