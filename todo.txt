@@ -1,0 +1,7 @@
+# TODO
+
+* Ability to rename boards on GUI client.
+* Should Marker mode still allow tool selection from afar? Certainly Drag Board should not be allowed, but I don't know what it currently does.
+* Generate QR and other text-based messages using text rendering, instead of bundling a giant PNG file.
+* Make server (and clients) more robust (occassionally crashes with some Poco NetException of some sort).
+* Identify users more clearly. Name boards more intelligently by default.
