@@ -344,7 +344,7 @@ void App::build_gui(){
 					}
 				}
 			}
-			board->set_highlight(ImGui::IsItemHovered());
+			board->set_highlight(gui.is_visible() && ImGui::IsItemHovered());
 		}
 		ImGui::ListBoxFooter();
 	}
@@ -499,6 +499,17 @@ void App::on_update(board_index iboard, int method, const unsigned char *buffer,
 		&board->image[3*(x+y*width)], width, w, h
 	);
 	board->UpdateTexture(&board->image[0], width, x, y, w, h);
+}
+void App::on_board_list_update(const std::vector<std::string> &boards_){
+	boards = boards_;
+	int n = boards.size();
+	content_remote.resize(n);
+	for(int i = 0; i < n; ++i){
+		if(NULL == content_remote[i]){
+			content_remote[i] = new Whiteboard(this, true, i, boards[i]);
+			content_remote[i]->ApplyShader(shadertex);
+		}
+	}
 }
 
 

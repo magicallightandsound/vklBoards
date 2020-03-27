@@ -218,6 +218,9 @@ struct MyBoard : public BoardClient, public BoardContent{
 		new_board(title, 2048, 1024);
 		get_boards(boards);
 	}
+	void on_board_list_update(const std::vector<std::string> &boards_){
+		boards = boards_;
+	}
 };
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){

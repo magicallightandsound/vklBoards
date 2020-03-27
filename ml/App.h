@@ -125,4 +125,5 @@ public:
 	void on_user_connected(const std::string &name);
 	void on_user_disconnected(const std::string &name);
 	void on_update(board_index iboard, int method, const unsigned char *buffer, unsigned buflen, unsigned x, unsigned y, unsigned w, unsigned h);
+	void on_board_list_update(const std::vector<std::string> &boards);
 };

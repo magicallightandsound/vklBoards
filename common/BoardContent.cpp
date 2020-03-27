@@ -73,8 +73,6 @@ void BoardContent::redraw_gui(){
 BoardContent::~BoardContent(){
 }
 
-static float fmax(float a, float b){ return (a > b) ? a : b; }
-
 void BoardContent::draw_line(pixel_coord x0, pixel_coord y0, pixel_coord x1, pixel_coord y1, BoardContent::Region *touched) { 
 	int dx = abs(x1-x0), sx = x0<x1 ? 1 : -1;
 	int dy = abs(y1-y0), sy = y0<y1 ? 1 : -1; 

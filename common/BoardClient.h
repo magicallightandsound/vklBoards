@@ -36,7 +36,7 @@ public:
 	void send_update(board_index iboard, unsigned char *img, unsigned stride, unsigned x, unsigned y, unsigned w, unsigned h);
 	
 	virtual void on_update(board_index iboard, int method, const unsigned char *buffer, unsigned buflen, unsigned x, unsigned y, unsigned w, unsigned h){}
-	virtual void on_board_list_update(std::vector<std::string> &boards){}
+	virtual void on_board_list_update(const std::vector<std::string> &boards){}
 	virtual void on_user_connected(const std::string &name){}
 	virtual void on_user_disconnected(const std::string &name){}
 private:
